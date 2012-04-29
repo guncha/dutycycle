@@ -16,6 +16,8 @@ type DutyCycle struct {
 	idx  uint
 	len  uint
 	cap  uint
+	cache float64
+	cache_valid bool
 }
 
 func (dc *DutyCycle) SetOn() {
@@ -34,6 +36,7 @@ func (dc *DutyCycle) step() {
 	if dc.len != dc.cap {
 		dc.len++
 	}
+	dc.cache_valid = false
 }
 
 const c1 = 0x5555555555555555
@@ -84,6 +87,11 @@ func pop4(x, y, z, w uint64) int {
 
 // Returns duty cycle as a float64 variable in the range [0;1]
 func (dc *DutyCycle) DutyCycle() float64 {
+	
+	if dc.cache_valid {
+		return dc.cache
+	}
+	
 	cnt := 0
 	
 	// do 4 words at a time
@@ -97,7 +105,9 @@ func (dc *DutyCycle) DutyCycle() float64 {
 		cnt += pop(dc.bits[i])
 	}
 	
-	return float64(cnt) / float64(dc.len)
+	dc.cache = float64(cnt) / float64(dc.len)
+	dc.cache_valid = true
+	return dc.cache
 }
 
 // Creates a new DutyCycle object and returns a pointer to it. Parameter length defines how many
